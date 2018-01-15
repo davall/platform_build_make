@@ -2649,6 +2649,7 @@ else
 endif
 endif
 
+
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 		build/tools/releasetools/ota_from_target_files
 	@echo "Package OTA: $@"
@@ -2662,7 +2663,12 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
+
+ifeq ($(AB_OTA_UPDATER),true)
+CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/ABC-ROM_$(TARGET_PRODUCT)-LIT-AF-$(ABC_VERSION).zip
+else
 CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/ABCrom_$(TARGET_PRODUCT)-$(ABC_VERSION).zip
+endif
 
 .PHONY: otapackage bacon
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
@@ -2678,7 +2684,7 @@ bacon: otapackage
 	@echo "  A·     VML    MM    ,9 ·Mb.     ,·   |__/ |  | |\/| "
 	@echo ".AMA.   .AMMA  JMMmmmd9    ··bmmmd·    |  \ |__| |  |"
 	@echo " "
-	@echo -e "Package complete: $(CUSTOM_TARGET_PACKAGE)"
+	@echo -e "Sexy Af...Package complete: $(CUSTOM_TARGET_PACKAGE)"
 
 endif    # build_ota_package
 

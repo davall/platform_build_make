@@ -151,7 +151,7 @@ import subprocess
 import shlex
 import tempfile
 import zipfile
-
+import os
 import common
 import edify_generator
 import sparse_img
@@ -190,7 +190,7 @@ OPTIONS.backuptool = False
 
 METADATA_NAME = 'META-INF/com/android/metadata'
 UNZIP_PATTERN = ['IMAGES/*', 'META/*']
-
+CUSTOM_TARGET_PACKAGE = ("ABC-ROM_"  + str(os.environ["TARGET_PRODUCT"]) + "-full-ota.zip")
 
 def SignOutput(temp_zip_name, output_zip_name):
   pw = OPTIONS.key_passwords[OPTIONS.package_key]
@@ -1560,7 +1560,7 @@ def main(argv):
       WriteFullOTAPackage(input_zip, output_zip)
 
   common.ZipClose(output_zip)
-
+  os.rename(output_zip, CUSTOM_TARGET_PACKAGE)
   # Sign the generated zip package unless no_signing is specified.
   if not OPTIONS.no_signing:
     SignOutput(temp_zip_file.name, args[1])
