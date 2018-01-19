@@ -232,7 +232,7 @@ ifeq ($(TARGET_BUILD_VARIANT),user)
   endif
 else
   # Non-user builds should show detailed build information
-  BUILD_DISPLAY_ID := $(BUILD_ID)
+  BUILD_DISPLAY_ID := $(build_desc)
 endif
 
 # Accepts a whitespace separated list of product locales such as
@@ -329,8 +329,7 @@ endif
 		$(hide) echo >> $@; \
 		        echo "#" >> $@; \
 		        echo "# ADDITIONAL_BUILD_PROPERTIES" >> $@; \
-		        echo "#" >> $@; \
-		        echo "# modversion this line enables Tasker root support" >> $@; )
+		        echo "#" >> $@; )
 	$(hide) $(foreach line,$(FINAL_BUILD_PROPERTIES), \
 		echo "$(line)" >> $@;)
 	$(hide) cat $(INSTALLED_ANDROID_INFO_TXT_TARGET) | grep 'require version-' | sed -e 's/require version-/ro.build.expect./g' >> $@
@@ -1465,7 +1464,11 @@ $(RECOVERY_FROM_BOOT_PATCH): $(INSTALLED_RECOVERYIMAGE_TARGET) \
 	                     $(HOST_OUT_EXECUTABLES)/bsdiff
 	@echo "Construct recovery from boot"
 	mkdir -p $(dir $@)
-	PATH=$(HOST_OUT_EXECUTABLES):$$PATH $(HOST_OUT_EXECUTABLES)/imgdiff $(INSTALLED_BOOTIMAGE_TARGET) $(INSTALLED_RECOVERYIMAGE_TARGET) $@
+ifeq ($(TARGET_NOT_USE_GZIP_RECOVERY_RAMDISK),true)
+	PATH=$(HOST_OUT_EXECUTABLES):$$PATH $(HOST_OUT_EXECUTABLES)/bsdiff $(INSTALLED_BOOTIMAGE_TARGET) $(INSTALLED_RECOVERYIMAGE_TARGET) $@
+else
+  	PATH=$(HOST_OUT_EXECUTABLES):$$PATH $(HOST_OUT_EXECUTABLES)/imgdiff $(INSTALLED_BOOTIMAGE_TARGET) $(INSTALLED_RECOVERYIMAGE_TARGET) $@
+endif
 else # $(BOARD_USES_FULL_RECOVERY_IMAGE) == true
 RECOVERY_FROM_BOOT_PATCH := $(INSTALLED_RECOVERYIMAGE_TARGET)
 endif
@@ -2630,26 +2633,28 @@ endif
 name := $(name)-ota-$(FILE_NAME_TAG)
 
 INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
+BPLPRODUCT := false
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 
 ifeq ($(AB_OTA_UPDATER),true)
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BRILLO_UPDATE_PAYLOAD)
+BPLPRODUCT = true
 else
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BRO)
 endif
 
 ifeq ($(WITH_GMS),true)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
-else
+endif
+
 ifneq ($(CUSTOM_BUILD),)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
 else
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
 endif
-endif
 
-
+ifneq($(BPLPRODUCT), true)
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 		build/tools/releasetools/ota_from_target_files
 	@echo "Package OTA: $@"
@@ -2662,6 +2667,10 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 	   --backup=$(backuptool) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
+else
+$(INTERNAL_OTA_PACKAGE_TARGET): $(BRILLO_UPDATE_PAYLOAD)
+	@echo "Package Brillo AVB OTA: $@"
+endif
 
 
 ifeq ($(AB_OTA_UPDATER),true)

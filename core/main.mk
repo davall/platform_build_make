@@ -71,13 +71,13 @@ DATE_FROM_FILE := date -d @$(BUILD_DATETIME_FROM_FILE)
 endif
 
 # CTS-specific config.
--include cts/build/config.mk
+#-include cts/build/config.mk
 # VTS-specific config.
--include test/vts/tools/vts-tradefed/build/config.mk
+#-include test/vts/tools/vts-tradefed/build/config.mk
 # device-tests-specific-config.
--include tools/tradefederation/build/suites/device-tests/config.mk
+#-include tools/tradefederation/build/suites/device-tests/config.mk
 # general-tests-specific-config.
--include tools/tradefederation/build/suites/general-tests/config.mk
+#-include tools/tradefederation/build/suites/general-tests/config.mk
 
 # This allows us to force a clean build - included after the config.mk
 # environment setup is done, but before we generate any dependencies.  This
