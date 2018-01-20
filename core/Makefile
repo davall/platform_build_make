@@ -34,6 +34,7 @@ unique_product_copy_files_destinations :=
 $(foreach cf,$(unique_product_copy_files_pairs), \
     $(eval _src := $(call word-colon,1,$(cf))) \
     $(eval _dest := $(call word-colon,2,$(cf))) \
+    $(call check-product-copy-files,$(cf)) \
     $(if $(filter $(unique_product_copy_files_destinations),$(_dest)), \
         $(info PRODUCT_COPY_FILES $(cf) ignored.), \
         $(eval _fulldest := $(call append-path,$(PRODUCT_OUT),$(_dest))) \
@@ -76,12 +77,6 @@ ifeq ($(BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED), true)
   property_overrides_split_enabled := true
 endif
 
-# -----------------------------------------------------------------
-# skip_fingerprint_from_file
-skip_fingerprint_from_file :=
-ifeq ($(PRODUCT_SKIP_FINGERPRINT_FROM_FILE), true)
-  skip_fingerprint_from_file := true
-endif
 
 # -----------------------------------------------------------------
 # prop.default
@@ -120,9 +115,7 @@ $(INSTALLED_DEFAULT_PROP_TARGET): $(intermediate_system_build_prop)
 	        echo "#" >> $@;
 	$(hide) echo ro.bootimage.build.date=`$(DATE_FROM_FILE)`>>$@
 	$(hide) echo ro.bootimage.build.date.utc=`$(DATE_FROM_FILE) +%s`>>$@
-ifndef skip_fingerprint_from_file
 	$(hide) echo ro.bootimage.build.fingerprint="$(BUILD_FINGERPRINT_FROM_FILE)">>$@
-endif
 	$(hide) build/tools/post_process_props.py $@
 ifdef property_overrides_split_enabled
 	$(hide) mkdir -p $(TARGET_ROOT_OUT)
@@ -1197,16 +1190,23 @@ RECOVERYIMAGE_ID_FILE := $(PRODUCT_OUT)/recovery.id
 # $(3): mount point
 # $(4): staging dir
 # Depmod requires a well-formed kernel version so 0.0 is used as a placeholder.
+ifeq ($(TARGET_MODULES_DIR),)
+  $(info No output dir for TARGET_DEVICE $(TARGET_DEVICE) modules defined, assuming system)
+  TARGET_MODULES_DIR := system
+else
+  $(info Module output dir for TARGET_DEVICE $(TARGET_DEVICE) assigned to vendor)
+  TARGET_MODULES_DIR := vendor
+endif
 define build-image-kernel-modules
-    $(hide) rm -rf $(2)/lib/modules
-    $(hide) mkdir -p $(2)/lib/modules
-    $(hide) cp $(1) $(2)/lib/modules/
+    $(hide) rm -rf $(TARGET_MODULES_DIR)/lib/modules
+    $(hide) mkdir -p $(TARGET_MODULES_DIR)/lib/modules
+    $(hide) cp $(1) $(TARGET_MODULES_DIR)/lib/modules/
     $(hide) rm -rf $(4)
     $(hide) mkdir -p $(4)/lib/modules/0.0/$(3)lib/modules
     $(hide) cp $(1) $(4)/lib/modules/0.0/$(3)lib/modules
     $(hide) $(DEPMOD) -b $(4) 0.0
-    $(hide) sed -e 's/\(.*modules.*\):/\/\1:/g' -e 's/ \([^ ]*modules[^ ]*\)/ \/\1/g' $(4)/lib/modules/0.0/modules.dep > $(2)/lib/modules/modules.dep
-    $(hide) cp $(4)/lib/modules/0.0/modules.alias $(2)/lib/modules
+    $(hide) sed -e 's/\(.*modules.*\):/\/\1:/g' -e 's/ \([^ ]*modules[^ ]*\)/ \/\1/g' $(4)/lib/modules/0.0/modules.dep > $(TARGET_MODULES_DIR)/lib/modules/modules.dep
+    $(hide) cp $(4)/lib/modules/0.0/modules.alias $(TARGET_MODULES_DIR)/lib/modules
 endef
 
 # $(1): output file
@@ -1403,18 +1403,6 @@ $(hide) ln -sf /vendor $(TARGET_OUT)/vendor
 endef
 else
 define create-system-vendor-symlink
-endef
-endif
-
-# Only Create symlink /system/vendor to /vendor if necessary.
-ifdef BOARD_NEEDS_VENDORIMAGE_SYMLINK
-define create-system-vendor-symlink
-$(hide) if [ -d $(TARGET_OUT)/vendor ] && [ ! -h $(TARGET_OUT)/vendor ]; then \
-  echo 'Non-symlink $(TARGET_OUT)/vendor detected!' 1>&2; \
-  echo 'You cannot install files to $(TARGET_OUT)/vendor while building a separate vendor.img!' 1>&2; \
-  exit 1; \
-fi
-$(hide) ln -sf /vendor $(TARGET_OUT)/vendor
 endef
 endif
 
@@ -2633,28 +2621,26 @@ endif
 name := $(name)-ota-$(FILE_NAME_TAG)
 
 INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
-BPLPRODUCT := false
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 
 ifeq ($(AB_OTA_UPDATER),true)
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BRILLO_UPDATE_PAYLOAD)
-BPLPRODUCT = true
 else
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BRO)
 endif
 
 ifeq ($(WITH_GMS),true)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
-endif
-
+else
 ifneq ($(CUSTOM_BUILD),)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
 else
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
 endif
+endif
 
-ifneq($(BPLPRODUCT), true)
+
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 		build/tools/releasetools/ota_from_target_files
 	@echo "Package OTA: $@"
@@ -2667,10 +2653,6 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 	   --backup=$(backuptool) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
-else
-$(INTERNAL_OTA_PACKAGE_TARGET): $(BRILLO_UPDATE_PAYLOAD)
-	@echo "Package Brillo AVB OTA: $@"
-endif
 
 
 ifeq ($(AB_OTA_UPDATER),true)
@@ -2696,7 +2678,6 @@ bacon: otapackage
 	@echo -e "Sexy Af...Package complete: $(CUSTOM_TARGET_PACKAGE)"
 
 endif    # build_ota_package
-
 # -----------------------------------------------------------------
 # The update package
 
@@ -3071,3 +3052,4 @@ include $(BUILD_SYSTEM)/product-graph.mk
 ifneq ($(sdk_repo_goal),)
 include $(TOPDIR)development/build/tools/sdk_repo.mk
 endif
+
