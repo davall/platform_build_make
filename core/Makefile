@@ -115,7 +115,9 @@ $(INSTALLED_DEFAULT_PROP_TARGET): $(intermediate_system_build_prop)
 	        echo "#" >> $@;
 	$(hide) echo ro.bootimage.build.date=`$(DATE_FROM_FILE)`>>$@
 	$(hide) echo ro.bootimage.build.date.utc=`$(DATE_FROM_FILE) +%s`>>$@
+ifndef skip_fingerprint_from_file
 	$(hide) echo ro.bootimage.build.fingerprint="$(BUILD_FINGERPRINT_FROM_FILE)">>$@
+endif
 	$(hide) build/tools/post_process_props.py $@
 ifdef property_overrides_split_enabled
 	$(hide) mkdir -p $(TARGET_ROOT_OUT)
@@ -1198,9 +1200,9 @@ else
   TARGET_MODULES_DIR := vendor
 endif
 define build-image-kernel-modules
-    $(hide) rm -rf $(TARGET_MODULES_DIR)/lib/modules
-    $(hide) mkdir -p $(TARGET_MODULES_DIR)/lib/modules
-    $(hide) cp $(1) $(TARGET_MODULES_DIR)/lib/modules/
+    $(hide) rm -rf $(2)/lib/modules
+    $(hide) mkdir -p $(2)/lib/modules
+    $(hide) cp $(1) $(2)/lib/modules/
     $(hide) rm -rf $(4)
     $(hide) mkdir -p $(4)/lib/modules/0.0/$(3)lib/modules
     $(hide) cp $(1) $(4)/lib/modules/0.0/$(3)lib/modules
@@ -2640,7 +2642,6 @@ else
 endif
 endif
 
-
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 		build/tools/releasetools/ota_from_target_files
 	@echo "Package OTA: $@"
@@ -2654,12 +2655,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
-
-ifeq ($(AB_OTA_UPDATER),true)
-CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/ABC-ROM_$(TARGET_PRODUCT)-LIT-AF-$(ABC_VERSION).zip
-else
-CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/ABCrom_$(TARGET_PRODUCT)-$(ABC_VERSION).zip
-endif
+CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/ABC_ROM_$(TARGET_PRODUCT)-$(ABC_VERSION).zip
 
 .PHONY: otapackage bacon
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
@@ -2675,9 +2671,12 @@ bacon: otapackage
 	@echo "  A·     VML    MM    ,9 ·Mb.     ,·   |__/ |  | |\/| "
 	@echo ".AMA.   .AMMA  JMMmmmd9    ··bmmmd·    |  \ |__| |  |"
 	@echo " "
-	@echo -e "Sexy Af...Package complete: $(CUSTOM_TARGET_PACKAGE)"
+	@echo -e "Package complete: $(CUSTOM_TARGET_PACKAGE)"
+	@echo " "
+	@echo "You are officially a karnt now "
 
 endif    # build_ota_package
+
 # -----------------------------------------------------------------
 # The update package
 
@@ -3030,6 +3029,7 @@ $(INTERNAL_FINDBUGS_HTML_TARGET): $(INTERNAL_FINDBUGS_XML_TARGET)
 
 # -----------------------------------------------------------------
 # These are some additional build tasks that need to be run.
+TESTING_FIND_BUGS := false
 ifneq ($(dont_bother),true)
 include $(sort $(wildcard $(BUILD_SYSTEM)/tasks/*.mk))
 -include $(sort $(wildcard vendor/*/build/tasks/*.mk))
@@ -3040,8 +3040,10 @@ include $(sort $(wildcard $(BUILD_SYSTEM)/tasks/*.mk))
 -include $(sort $(wildcard device/*/*/build/tasks/*.mk))
 -include $(sort $(wildcard product/*/*/build/tasks/*.mk))
 # Also add test specifc tasks
+ifeq (true,$(TESTING_FIND_BUGS))
 include $(sort $(wildcard platform_testing/build/tasks/*.mk))
 include $(sort $(wildcard test/vts/tools/build/tasks/*.mk))
+endif
 endif
 
 include $(BUILD_SYSTEM)/product-graph.mk
@@ -3052,4 +3054,3 @@ include $(BUILD_SYSTEM)/product-graph.mk
 ifneq ($(sdk_repo_goal),)
 include $(TOPDIR)development/build/tools/sdk_repo.mk
 endif
-
