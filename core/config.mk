@@ -225,7 +225,7 @@ TARGET_DEVICE_KERNEL_HEADERS := $(strip $(wildcard $(TARGET_DEVICE_DIR)/kernel-h
 define validate-kernel-headers
 $(if $(firstword $(foreach hdr_dir,$(1),\
          $(filter-out kernel-headers,$(notdir $(hdr_dir))))),\
-     $(error Kernel header dirs must be end in kernel-headers: $(1)))
+     $(warning Kernel header dirs must be end in kernel-headers: $(1)))
 endef
 # also allow the board config to provide additional directories since
 # there could be device/oem/base_hw and device/oem/derived_hw
