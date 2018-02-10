@@ -263,9 +263,9 @@ ifneq ($(filter-out false,$(USE_CCACHE)),)
     # Detect if the system already has ccache installed.
 ifeq ($(TARGET_KERNEL_CLANG_COMPILE),true)
     # Only set clang-3859424 if TARGET_KERNEL_CLANG_VERSION hasn't been set by the device config
-    TARGET_KERNEL_CLANG_VERSION := clang-4556391
+    TARGET_KERNEL_CLANG_VERSION := clang-stable
     # Find the clang-* directory containing the specified version
-    KERNEL_CLANG_VERSION := clang-4556391
+    KERNEL_CLANG_VERSION := clang-stable
     TARGET_KERNEL_CLANG_PATH ?= $(ANDROID_BUILD_TOP)/prebuilts/clang/host/$(HOST_OS)-x86/$(KERNEL_CLANG_VERSION)/bin
     ifeq ($(KERNEL_ARCH),arm64)
         KERNEL_CLANG_TRIPLE ?= CLANG_TRIPLE=aarch64-linux-gnu-
