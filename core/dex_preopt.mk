@@ -21,7 +21,7 @@ DEX_PREOPT_DEFAULT ?= true
 
 # The default filter for which files go into the system_other image (if it is
 # being used). To bundle everything one should set this to '%'
-SYSTEM_OTHER_ODEX_FILTER ?= app/% priv-app/%
+SYSTEM_OTHER_ODEX_FILTER ?= %
 
 # Method returning whether the install path $(1) should be for system_other.
 install-on-system-other = $(filter-out $(PRODUCT_DEXPREOPT_SPEED_APPS) $(PRODUCT_SYSTEM_SERVER_APPS),$(basename $(notdir $(filter $(foreach f,$(SYSTEM_OTHER_ODEX_FILTER),$(TARGET_OUT)/$(f)),$(1)))))
