@@ -151,7 +151,7 @@ import subprocess
 import shlex
 import tempfile
 import zipfile
-import os
+
 import common
 import edify_generator
 import sparse_img
@@ -190,6 +190,7 @@ OPTIONS.backuptool = False
 
 METADATA_NAME = 'META-INF/com/android/metadata'
 UNZIP_PATTERN = ['IMAGES/*', 'META/*']
+
 
 def SignOutput(temp_zip_name, output_zip_name):
   pw = OPTIONS.key_passwords[OPTIONS.package_key]
@@ -481,6 +482,9 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Print("   AbmmmqMA     MM    `Y MM.        ____ ____ _  _")
   script.Print("  A'     VML    MM    ,9 `Mb.     ,'|__/ |  | |\/|")
   script.Print(".AMA.   .AMMA..JMMmmmd9    `*bmmmd' |  \ |__| |  |")
+  script.Print(" ")
+  script.Print(" ")
+  script.Print("Installing this sexy af thingy")
 
   script.AppendExtra("ifelse(is_mounted(\"/system\"), unmount(\"/system\"));")
   device_specific.FullOTA_InstallBegin()
@@ -1564,6 +1568,7 @@ def main(argv):
       WriteFullOTAPackage(input_zip, output_zip)
 
   common.ZipClose(output_zip)
+
   # Sign the generated zip package unless no_signing is specified.
   if not OPTIONS.no_signing:
     SignOutput(temp_zip_file.name, args[1])
